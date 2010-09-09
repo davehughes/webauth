@@ -4,9 +4,6 @@
 import logging
 import re
 import socket
-import web
-
-from decorator import decorator
 
 LOG = logging.getLogger(__name__)
 PRINCIPAL_REALM_PATTERN = re.compile('^(?P<principal>.+)@(?P<realm>.+)$')
@@ -194,52 +191,3 @@ class AuthClientError(Exception):
     Error in the webauth client caused by a socket connection error.
     '''
     pass
-
-
-def create_webauth_decorator(host, port, cookie_name):
-    '''
-    Parameterized decorator creation function.
-
-    Returns a decorator for webpy request methods that ensures that the
-    requesting user has authenticated through the ASU WebAuth system and
-    that the user's single sign-on ID has been stored in the current session.
-    
-    Depends on webpy and the existence of a webpy request context.
-    '''
-
-    verifier = Verifier(host, port)
-
-    def _webauth(f, *args, **kwargs):
-        '''
-        If a session has already been set up, the WebAuth process is 
-        short-circuited.  Otherwise, the Verify service gets called with
-        the webauth cookie and the request is continued or redirected based
-        on the result.
-        '''
-        
-        # if session doesn't contain ASURITE...
-        session = web.ctx.session
-        if not session.get('asurite'):
-            try:
-                # verify authentication
-                authtoken = web.cookies().get(cookie_name)
-                authinfo = verifier.verify(authtoken, web.ctx.ip)
-
-                # attach user info to session
-                session.asurite = authinfo['principal']
-                session.authinfo = authinfo
-            except NotAuthenticatedError:
-                thisurl = '%s%s%s' % (web.ctx.home, web.ctx.path, web.ctx.query)
-                login_template = 'https://weblogin.asu.edu/cgi-bin/login?callapp=%s'
-                raise web.seeother(login_template % thisurl)
-            #except AuthServiceError, e:
-            #    pass
-            #except AuthClientError, e:
-            #    pass
-
-        # call the wrapped function
-        return f(*args, **kwargs)
-
-    return lambda f: decorator(_webauth, f)
-
-webauth = create_webauth_decorator('webauth.asu.edu', 3001, 'ASUWEBAUTH')
