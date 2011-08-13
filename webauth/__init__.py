@@ -137,8 +137,8 @@ class Verifier(object):
         if not principal or not realm:
             raise AuthServiceError('Invalid user string in response')
     
-        result['principal'] = match.group('principal')
-        result['realm'] = match.group('realm')
+        result['principal'] = principal
+        result['realm'] = realm
 
         if response_values[2] == 'AUTHENONLY':
             # retrieve and set callapp if it is returned

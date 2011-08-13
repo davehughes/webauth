@@ -3,7 +3,7 @@
 import setuptools
 
 setuptools.setup(
-    name='asuwebauth',
+    name='webauth',
     version='0.0.1',
     install_requires = []
 )

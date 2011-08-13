@@ -1,5 +1,5 @@
 import unittest
-from asurepo.webauth import *
+from webauth import *
 
 class TestVerifierInternal(unittest.TestCase):
 
