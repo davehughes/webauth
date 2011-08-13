@@ -1,12 +1,7 @@
 '''
  See http://asu.edu/webauth/implement.htm for more details on implementation.
 '''
-import logging
-import re
 import socket
-
-LOG = logging.getLogger(__name__)
-PRINCIPAL_REALM_PATTERN = re.compile('^(?P<principal>.+)@(?P<realm>.+)$')
 
 class Verifier(object):
     '''
@@ -35,7 +30,8 @@ class Verifier(object):
         return self.handle_response(response)
 
     def build_request(self, token, ip, 
-                      fetchprofile=False, include_callapp=False):
+                      fetchprofile=False, 
+                      include_callapp=False):
         '''
         Build a simple request string from the provided params.
         '''
@@ -74,8 +70,6 @@ class Verifier(object):
         Given a raw response string returned from the Verify service, parse 
         into a dict structure or raise an error appropriate to the status code.
         '''
-
-        LOG.debug('Handling webauth response string: %s', response)
         response_values = response.split(':')
 
         # sanity check on values length
@@ -139,9 +133,8 @@ class Verifier(object):
         result = {}
     
         # parse principal@realm (which is always specified)
-        principal_at_realm = response_values[1]
-        match = PRINCIPAL_REALM_PATTERN.match(principal_at_realm)
-        if not match:
+        principal, at, realm = response_values[1].partition('@')
+        if not principal or not realm:
             raise AuthServiceError('Invalid user string in response')
     
         result['principal'] = match.group('principal')
@@ -158,7 +151,7 @@ class Verifier(object):
             # log a warning if a bad affiliation section is returned
             affilvals = response_values[3:]
             if not len(affilvals) % 2:
-                LOG.warning('Invalid affiliations specified: %s', affilvals)
+                raise AuthClientError('Invalid affiliations specified: %s' % affilvals)
             
             # create a dict of {affiliation_type -> organization} from a list
             # like ['affil1', 'org1', 'affil2', 'org2', ...]
